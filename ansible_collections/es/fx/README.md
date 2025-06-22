@@ -128,7 +128,7 @@ Comprehensive FortiGate firewall configuration management.
 ## Dependencies
 
 This collection requires the following Ansible collections:
-- `fortinet.fortios` >= 2.3.0 (for FortiGate role)
+- `fortinet.fortios` >= 2.4.0 (for FortiGate role)
 - `ansible.netcommon` >= 2.0.0
 
 ## Contributing
