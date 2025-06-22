@@ -1,0 +1,8 @@
+---
+# SSL VPN configuration tasks
+
+- name: Configure SSL VPN settings
+  fortinet.fortios.fortios_vpn_ssl_settings:
+    access_token: "{{ access_token }}"
+    vpn_ssl_settings: "{{ fortigate_vpn_ssl_settings }}"
+  when: fortigate_vpn_ssl_settings is defined

@@ -1,0 +1,26 @@
+---
+# Firewall service configuration tasks
+
+# Configure custom firewall services
+- name: Configure firewall service - {{ item.firewall_service_custom.name }}
+  fortinet.fortios.fortios_firewall_service_custom:
+    state: "{{ item.state | default(fortigate_default_state) }}"
+    access_token: "{{ access_token }}"
+    vdom: "{{ item.vdom | default(vdom | default(fortigate_vdom)) }}"
+    firewall_service_custom: "{{ item.firewall_service_custom }}"
+  loop: "{{ fortigate_firewall_services | default([]) }}"
+  loop_control:
+    label: "{{ item.firewall_service_custom.name }}"
+  when: fortigate_firewall_services is defined
+
+# Configure firewall service groups if defined
+- name: Configure firewall service group - {{ item.firewall_service_group.name }}
+  fortinet.fortios.fortios_firewall_service_group:
+    state: "{{ item.state | default(fortigate_default_state) }}"
+    access_token: "{{ access_token }}"
+    vdom: "{{ item.vdom | default(vdom | default(fortigate_vdom)) }}"
+    firewall_service_group: "{{ item.firewall_service_group }}"
+  loop: "{{ fortigate_firewall_service_groups | default([]) }}"
+  loop_control:
+    label: "{{ item.firewall_service_group.name }}"
+  when: fortigate_firewall_service_groups is defined

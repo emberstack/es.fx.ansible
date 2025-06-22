@@ -1,0 +1,29 @@
+---
+# Configure ACME on specified interfaces
+
+- name: Configure ACME interfaces
+  fortinet.fortios.fortios_system_acme:
+    access_token: "{{ access_token }}"
+    member_path: "interface:interface_name"
+    member_state: "present"
+    system_acme:
+      interface:
+        - interface_name: "{{ interface_name }}"
+  loop: "{{ fortigate_acme_interfaces | default([]) }}"
+  loop_control:
+    loop_var: interface_name
+    label: "{{ interface_name }}"
+
+- name: Remove ACME from interfaces
+  fortinet.fortios.fortios_system_acme:
+    access_token: "{{ access_token }}"
+    member_path: "interface:interface_name"
+    member_state: "absent"
+    system_acme:
+      interface:
+        - interface_name: "{{ interface_name }}"
+  loop: "{{ fortigate_acme_interfaces_remove | default([]) }}"
+  loop_control:
+    loop_var: interface_name
+    label: "{{ interface_name }}"
+  when: fortigate_acme_interfaces_remove is defined

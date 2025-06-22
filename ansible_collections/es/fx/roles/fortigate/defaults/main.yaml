@@ -1,0 +1,109 @@
+---
+# Unified FortiGate role defaults
+
+# Connection defaults
+vdom: "root"
+ansible_httpapi_port: 5443
+ansible_httpapi_use_ssl: yes
+ansible_httpapi_validate_certs: no
+ansible_network_os: fortinet.fortios.fortios
+
+# Connection retry and timeout settings
+fortigate_connection_retries: 3
+fortigate_connection_delay: 5
+fortigate_api_timeout: 60
+
+# Default admin settings
+fortigate_admin_port: 443
+fortigate_admin_sport: 5443
+
+# Default state for all objects
+fortigate_default_state: "present"
+
+# Default model capabilities
+fortigate_default_capabilities:
+  supports_hardware_switch: true
+  supports_wireless: true
+  supports_fortiextender: true
+  max_vdoms: 10
+
+# System defaults
+fortigate_system_settings: {}
+fortigate_certificates: []
+fortigate_acme_interfaces: []
+fortigate_ldap_servers: []
+fortigate_local_users: []
+fortigate_user_groups: []
+fortigate_external_resources: []
+fortigate_system_dns: {}
+fortigate_dns_databases: []
+fortigate_dns_entries: []
+fortigate_ddns_servers: []
+
+# Security defaults
+fortigate_dnsfilter_domain_filters: []
+fortigate_dnsfilter_profiles: []
+fortigate_security_profiles: {}
+
+# Network defaults
+fortigate_interfaces: []
+fortigate_switches: []
+fortigate_switch_vlans: []
+fortigate_mclag_interfaces: []
+fortigate_sdwan: {}
+fortigate_static_routes: []
+fortigate_zones: []
+
+# Firewall defaults
+fortigate_firewall_addresses: []
+fortigate_firewall_address_groups: []
+fortigate_firewall_services: []
+fortigate_firewall_service_groups: []
+fortigate_firewall_ippools: []
+fortigate_firewall_health_checks: []
+fortigate_firewall_vips: []
+fortigate_firewall_vip_groups: []
+fortigate_firewall_policies: []
+fortigate_firewall_multicast_policies: []
+
+# VPN defaults
+fortigate_vpn_ssl_settings: {}
+fortigate_vpn_tunnels: []
+
+# Controller extension defaults
+fortigate_controller_extension_dataplans: []
+fortigate_controller_extension_extenders: []
+fortigate_controller_extension_profiles: []
+
+# Wireless defaults
+fortigate_wireless_ssids: []
+fortigate_wireless_ap_profiles: []
+fortigate_wireless_global:
+  country: "US"
+
+# Cleanup defaults
+cleanup_interfaces:
+  - internal
+  - lan
+cleanup_policies: true
+cleanup_dhcp_servers: true
+cleanup_firewall_addresses: true
+cleanup_virtual_switches: true
+
+# Version detection defaults
+fortigate_detect_version: true
+fortigate_version_cache_timeout: 3600
+
+# DHCP defaults
+fortigate_dhcp_id_start: 1
+fortigate_dhcp_lease_time: 86400
+
+# Certificate defaults
+fortigate_acme_cert_type: "regular"
+fortigate_acme_interface_key: "any"
+
+# Wait times for various operations
+fortigate_port_change_wait: 10
+fortigate_cert_enrollment_wait: 30
+fortigate_cert_check_interval: 5
+fortigate_cert_max_wait: 300

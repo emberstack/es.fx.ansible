@@ -1,0 +1,308 @@
+---
+# Unified FortiGate configuration role
+
+# Connection and version detection (from fortigate_common)
+- name: Establish FortiGate connection
+  include_tasks: connection.yaml
+  tags:
+    - fortigate-connection
+    - fortigate-base
+    - fortigate-all
+
+- name: Detect FortiGate version and capabilities
+  include_tasks: version_facts.yaml
+  when: fortigate_version is not defined
+  tags:
+    - fortigate-connection
+    - fortigate-base
+    - fortigate-all
+
+# System configuration (from fortigate_system)
+- name: Configure system settings
+  include_tasks: settings.yaml
+  vars:
+    settings: "{{ fortigate_system_settings }}"
+  when: fortigate_system_settings is defined
+  tags:
+    - fortigate-system
+    - fortigate-base
+    - fortigate-all
+
+
+- name: Configure certificates
+  include_tasks: certificates.yaml
+  when: 
+    - fortigate_certificates is defined or fortigate_admin_server_cert is defined
+  tags:
+    - fortigate-system
+    - fortigate-certificates
+    - fortigate-all
+
+- name: Configure LDAP servers
+  include_tasks: ldap.yaml
+  when: fortigate_ldap_servers is defined
+  tags:
+    - fortigate-system
+    - fortigate-auth
+    - fortigate-all
+
+- name: Configure users and user groups
+  include_tasks: users.yaml
+  when: fortigate_local_users is defined or fortigate_user_groups is defined
+  tags:
+    - fortigate-system
+    - fortigate-auth
+    - fortigate-all
+
+- name: Configure external resources
+  include_tasks: external_resources.yaml
+  when: fortigate_external_resources is defined
+  tags:
+    - fortigate-system
+    - fortigate-all
+
+- name: Configure DNS
+  include_tasks: dns.yaml
+  when: fortigate_system_dns is defined or fortigate_dns_databases is defined or fortigate_dns_entries is defined
+  tags:
+    - fortigate-system
+    - fortigate-dns
+    - fortigate-all
+
+- name: Configure DDNS
+  include_tasks: ddns.yaml
+  when: fortigate_ddns_servers is defined
+  tags:
+    - fortigate-system
+    - fortigate-dns
+    - fortigate-all
+
+# Security configuration (from fortigate_security)
+- name: Configure DNS filters
+  include_tasks: dns_filters.yaml
+  when: fortigate_dnsfilter_domain_filters is defined or fortigate_dnsfilter_profiles is defined
+  tags:
+    - fortigate-security
+    - fortigate-dns-filter
+    - fortigate-all
+
+# Firewall Phase 1: Addresses only (needed for SD-WAN)
+- name: Configure firewall addresses and address groups
+  include_tasks: addresses.yaml
+  when: fortigate_firewall_addresses is defined or fortigate_firewall_address_groups is defined
+  tags:
+    - fortigate-security
+    - fortigate-addresses
+    - fortigate-all
+
+# Network configuration (from fortigate_network)
+- name: Cache DHCP server facts
+  when: fortigate_interfaces | selectattr('dhcp', 'defined') | list | length > 0
+  tags:
+    - fortigate-network
+    - fortigate-interfaces
+    - fortigate-all
+  block:
+    - name: Get all DHCP servers
+      fortinet.fortios.fortios_configuration_fact:
+        access_token: "{{ access_token }}"
+        selector: "system.dhcp_server"
+        formatters:
+          - id
+          - interface
+      register: all_dhcp_servers
+      
+    - name: Set DHCP facts cache
+      set_fact:
+        dhcp_facts_cache: "{{ all_dhcp_servers.meta.results | default([]) }}"
+
+- name: Configure network interfaces
+  include_tasks: interface.yaml
+  loop: "{{ fortigate_interfaces | default([]) }}"
+  loop_control:
+    loop_var: interface
+    label: "{{ interface.system_interface.name | default('interface') }}"
+  tags:
+    - fortigate-network
+    - fortigate-interfaces
+    - fortigate-all
+
+- name: Configure network zones
+  include_tasks: zones.yaml
+  when: fortigate_zones is defined and fortigate_zones | length > 0
+  tags:
+    - fortigate-network
+    - fortigate-zones
+    - fortigate-all
+
+- name: Configure switch VLANs
+  include_tasks: switch_vlans.yaml
+  when: 
+    - fortigate_switch_vlans is defined
+    - fortigate_model_capabilities.supports_hardware_switch | default(true)
+  tags:
+    - fortigate-network
+    - fortigate-switch
+    - fortigate-all
+
+- name: Configure switch controllers
+  include_tasks: switch.yaml
+  loop: "{{ fortigate_switches | default([]) }}"
+  loop_control:
+    loop_var: switch
+    label: "{{ switch.switch_id | default(switch.sn) }}"
+  when: fortigate_model_capabilities.supports_hardware_switch | default(true)
+  tags:
+    - fortigate-network
+    - fortigate-switch
+    - fortigate-all
+
+- name: Configure FortiLink MCLAG
+  include_tasks: mclag.yaml
+  loop: "{{ fortigate_mclag_interfaces | default([]) }}"
+  loop_control:
+    loop_var: interface
+    label: "{{ interface.name | default('mclag') }}"
+  when: fortigate_model_capabilities.supports_hardware_switch | default(true)
+  tags:
+    - fortigate-network
+    - fortigate-switch
+    - fortigate-all
+
+- name: Configure SD-WAN
+  include_tasks: sdwan.yaml
+  when: fortigate_sdwan is defined
+  tags:
+    - fortigate-network
+    - fortigate-sdwan
+    - fortigate-all
+
+- name: Configure static routes
+  include_tasks: static_routes.yaml
+  when: fortigate_static_routes is defined and fortigate_static_routes | length > 0
+  tags:
+    - fortigate-network
+    - fortigate-routing
+    - fortigate-all
+
+# VPN configuration (from fortigate_vpn)
+- name: Configure SSL VPN settings
+  include_tasks: ssl_vpn.yaml
+  when: fortigate_vpn_ssl_settings is defined
+  tags:
+    - fortigate-vpn
+    - fortigate-ssl-vpn
+    - fortigate-all
+
+- name: Configure VPN IPSec tunnels
+  include_tasks: ipsec.yaml
+  loop: "{{ fortigate_vpn_tunnels | default([]) }}"
+  loop_control:
+    loop_var: tunnel
+    label: "{{ tunnel.vpn_ipsec_phase1_interface.name | default('tunnel') }}"
+  tags:
+    - fortigate-vpn
+    - fortigate-ipsec
+    - fortigate-all
+
+# Extension controller configuration (from fortigate_controller_extension)
+- name: Configure extension controller dataplans
+  include_tasks: dataplans.yaml
+  when: fortigate_controller_extension_dataplans is defined
+  tags:
+    - fortigate-extension
+    - fortigate-all
+
+- name: Configure extension controller extenders
+  include_tasks: extenders.yaml
+  when: fortigate_controller_extension_extenders is defined
+  tags:
+    - fortigate-extension
+    - fortigate-all
+
+- name: Configure extension controller profiles
+  include_tasks: profiles.yaml
+  when: fortigate_controller_extension_profiles is defined
+  tags:
+    - fortigate-extension
+    - fortigate-all
+
+# Wireless configuration (from fortigate_wireless)
+- name: Configure wireless SSIDs (VAPs)
+  include_tasks: ssids.yaml
+  loop: "{{ fortigate_wireless_ssids | default([]) }}"
+  loop_control:
+    loop_var: ssid
+    label: "{{ ssid.wireless_controller_vap.name | default('ssid') }}"
+  tags:
+    - fortigate-wireless
+    - fortigate-ssids
+    - fortigate-all
+
+- name: Configure FortiAP profiles
+  include_tasks: ap_profiles.yaml
+  loop: "{{ fortigate_wireless_ap_profiles | default([]) }}"
+  loop_control:
+    loop_var: profile
+    label: "{{ profile.wireless_controller_wtp_profile.name | default('profile') }}"
+  tags:
+    - fortigate-wireless
+    - fortigate-ap-profiles
+    - fortigate-all
+
+# Firewall Phase 2: Complete configuration
+- name: Configure firewall services
+  include_tasks: services.yaml
+  when: fortigate_firewall_services is defined or fortigate_firewall_service_groups is defined
+  tags:
+    - fortigate-security
+    - fortigate-services
+    - fortigate-all
+
+- name: Configure firewall health checks
+  include_tasks: health_checks.yaml
+  when: fortigate_firewall_health_checks is defined
+  tags:
+    - fortigate-security
+    - fortigate-health-checks
+    - fortigate-all
+
+- name: Configure firewall VIPs
+  include_tasks: vip.yaml
+  when: fortigate_firewall_vips is defined or fortigate_firewall_vip_groups is defined
+  tags:
+    - fortigate-security
+    - fortigate-vips
+    - fortigate-all
+
+- name: Configure firewall IP pools
+  include_tasks: ippools.yaml
+  when: fortigate_firewall_ippools is defined
+  tags:
+    - fortigate-security
+    - fortigate-ippools
+    - fortigate-all
+
+- name: Configure firewall policies
+  include_tasks: policies.yaml
+  when: fortigate_firewall_policies is defined
+  tags:
+    - fortigate-security
+    - fortigate-policies
+    - fortigate-all
+
+- name: Configure multicast policies
+  include_tasks: multicast.yaml
+  when: fortigate_firewall_multicast_policies is defined
+  tags:
+    - fortigate-security
+    - fortigate-multicast
+    - fortigate-all
+
+# Cleanup tasks (optional - from fortigate_cleanup)
+- name: Clean up default configuration
+  include_tasks: cleanup_defaults.yaml
+  when: cleanup_defaults | default(false)
+  tags:
+    - fortigate-cleanup
+    - fortigate-all

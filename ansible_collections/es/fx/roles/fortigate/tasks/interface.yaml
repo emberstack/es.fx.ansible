@@ -1,0 +1,72 @@
+---
+# Optimized interface configuration tasks
+
+# Configure the interface
+- name: Configure interface {{ interface.system_interface.name }}
+  fortinet.fortios.fortios_system_interface:
+    access_token: "{{ access_token }}"
+    state: "{{ interface.state | default('present') }}"
+    system_interface: "{{ interface.system_interface }}"
+
+# DHCP Server configuration
+- name: Configure DHCP server for {{ interface.system_interface.name }}
+  when: interface.dhcp is defined
+  block:
+    # Calculate DHCP ID more efficiently
+    - name: Set DHCP server ID
+      set_fact:
+        dhcp_server_id: >-
+          {%- if dhcp_facts_cache is defined -%}
+            {%- set existing = dhcp_facts_cache | selectattr('interface', 'eq', interface.system_interface.name) | list -%}
+            {%- if existing -%}
+              {{ existing[0].id }}
+            {%- else -%}
+              {{ (dhcp_facts_cache | map(attribute='id') | list | max | default(0)) + 1 }}
+            {%- endif -%}
+          {%- else -%}
+            1
+          {%- endif -%}
+
+    - name: Configure DHCP server
+      fortinet.fortios.fortios_system_dhcp_server:
+        state: "{{ interface.dhcp.state | default('present') }}"
+        access_token: "{{ access_token }}"
+        system_dhcp_server: >-
+          {{ interface.dhcp.system_dhcp_server | combine({
+            'id': dhcp_server_id | int,
+            'interface': interface.system_interface.name
+          }) }}
+      # Use revision_changed for accurate change detection
+
+# DNS Server configuration
+- name: Configure DNS server for {{ interface.system_interface.name }}
+  fortinet.fortios.fortios_system_dns_server:
+    state: "{{ interface.dns_server.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    system_dns_server: >-
+      {{ interface.dns_server.system_dns_server | combine({
+        'name': interface.system_interface.name
+      }) }}
+  when: interface.dns_server is defined
+
+# NTP Server configuration
+- name: Configure NTP server for {{ interface.system_interface.name }}
+  fortinet.fortios.fortios_system_ntp:
+    access_token: "{{ access_token }}"
+    member_path: "interface:interface_name"
+    member_state: "{{ interface.system_ntp.member_state | default('present') }}"
+    system_ntp:
+      interface:
+        - interface_name: "{{ interface.system_interface.name }}"
+  when: interface.system_ntp is defined
+
+# ACME interface configuration
+- name: Configure ACME for {{ interface.system_interface.name }}
+  fortinet.fortios.fortios_system_acme:
+    access_token: "{{ access_token }}"
+    member_path: "interface:interface_name"
+    member_state: "{{ interface.system_acme.member_state | default('present') }}"
+    system_acme:
+      interface:
+        - interface_name: "{{ interface.system_interface.name }}"
+  when: interface.system_acme is defined

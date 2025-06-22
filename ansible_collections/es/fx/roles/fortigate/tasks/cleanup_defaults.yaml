@@ -1,0 +1,119 @@
+---
+# Consolidated cleanup tasks for FortiGate default configuration
+
+# Clean up default firewall policies
+- name: Load existing firewall policies
+  fortinet.fortios.fortios_configuration_fact:
+    access_token: "{{ access_token }}"
+    selector: "firewall_policy"
+  register: existing_policies
+  when: cleanup_policies | default(true)
+
+- name: Display policies to be removed
+  debug:
+    msg: "Found {{ existing_policies.meta.results | length }} policies to remove"
+  when: 
+    - cleanup_policies | default(true)
+    - existing_policies.meta.results is defined
+
+- name: Delete all default firewall policies
+  fortinet.fortios.fortios_firewall_policy:
+    state: "absent"
+    access_token: "{{ access_token }}"
+    firewall_policy:
+      policyid: "{{ item.policyid }}"
+  loop: "{{ existing_policies.meta.results | default([]) }}"
+  loop_control:
+    label: "Policy {{ item.policyid }}: {{ item.name | default('unnamed') }}"
+  when: 
+    - cleanup_policies | default(true)
+    - existing_policies.meta.results is defined
+
+# Clean up DHCP servers on default interfaces
+- name: Load existing DHCP servers
+  fortinet.fortios.fortios_configuration_fact:
+    access_token: "{{ access_token }}"
+    selector: "system.dhcp_server"
+  register: existing_dhcp_servers
+  when: cleanup_dhcp_servers | default(true)
+
+- name: Display DHCP servers to be removed
+  debug:
+    msg: "Checking {{ existing_dhcp_servers.meta.results | length }} DHCP servers"
+  when: 
+    - cleanup_dhcp_servers | default(true)
+    - existing_dhcp_servers.meta.results is defined
+
+- name: Delete DHCP servers on default interfaces
+  fortinet.fortios.fortios_system_dhcp_server:
+    state: "absent"
+    access_token: "{{ access_token }}"
+    system_dhcp_server:
+      id: "{{ item.id }}"
+  loop: "{{ existing_dhcp_servers.meta.results | default([]) }}"
+  loop_control:
+    label: "DHCP Server ID {{ item.id }} on interface {{ item.interface }}"
+  when: 
+    - cleanup_dhcp_servers | default(true)
+    - item.interface in cleanup_interfaces
+    - existing_dhcp_servers.meta.results is defined
+
+# Clean up firewall addresses associated with default interfaces
+- name: Load existing firewall addresses
+  fortinet.fortios.fortios_configuration_fact:
+    access_token: "{{ access_token }}"
+    selector: "firewall_address"
+  register: existing_addresses
+  when: cleanup_firewall_addresses | default(true)
+
+- name: Display firewall addresses to check
+  debug:
+    msg: "Checking {{ existing_addresses.meta.results | length }} firewall addresses"
+  when: 
+    - cleanup_firewall_addresses | default(true)
+    - existing_addresses.meta.results is defined
+
+- name: Delete interface-subnet addresses on default interfaces
+  fortinet.fortios.fortios_firewall_address:
+    state: "absent"
+    access_token: "{{ access_token }}"
+    firewall_address:
+      name: "{{ item.name }}"
+  loop: "{{ existing_addresses.meta.results | default([]) }}"
+  loop_control:
+    label: "Address {{ item.name }} (type: {{ item.type }}, interface: {{ item.interface | default('none') }})"
+  when:
+    - cleanup_firewall_addresses | default(true)
+    - item.type == 'interface-subnet'
+    - item.interface is defined
+    - item.interface in cleanup_interfaces
+    - existing_addresses.meta.results is defined
+
+# Clean up default virtual switches
+- name: Load existing virtual switches
+  fortinet.fortios.fortios_configuration_fact:
+    access_token: "{{ access_token }}"
+    selector: "system_virtual-switch"
+  register: existing_vswitches
+  when: cleanup_virtual_switches | default(true)
+
+- name: Display virtual switches to check
+  debug:
+    msg: "Checking {{ existing_vswitches.meta.results | length }} virtual switches"
+  when: 
+    - cleanup_virtual_switches | default(true)
+    - existing_vswitches.meta.results is defined
+
+- name: Delete default virtual switches
+  fortinet.fortios.fortios_system_virtual_switch:
+    state: "absent"
+    access_token: "{{ access_token }}"
+    system_virtual_switch:
+      name: "{{ item.name }}"
+  loop: "{{ existing_vswitches.meta.results | default([]) }}"
+  loop_control:
+    label: "vSwitch {{ item.name }}"
+  when:
+    - cleanup_virtual_switches | default(true)
+    - item.name in cleanup_interfaces
+    - existing_vswitches.meta.results is defined

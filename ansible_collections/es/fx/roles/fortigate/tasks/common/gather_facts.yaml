@@ -1,0 +1,16 @@
+---
+# Reusable task for gathering FortiGate configuration facts
+# Result will be in _fact_result variable
+
+- name: "Gather {{ fact_description }}"
+  fortinet.fortios.fortios_configuration_fact:
+    access_token: "{{ access_token }}"
+    selector: "{{ fact_selector }}"
+    vdom: "{{ vdom | default(fortigate_vdom) }}"
+    formatters: "{{ fact_formatters | default(omit) }}"
+    filters: "{{ fact_filters | default(omit) }}"
+  register: _fact_result
+  retries: "{{ fact_retries | default(fortigate_connection_retries) }}"
+  delay: "{{ fact_delay | default(fortigate_connection_delay) }}"
+  until: _fact_result is not failed
+  failed_when: false

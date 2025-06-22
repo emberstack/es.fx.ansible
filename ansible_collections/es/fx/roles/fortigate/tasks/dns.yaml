@@ -1,0 +1,33 @@
+---
+# Configure system DNS settings
+
+# Configure primary DNS settings
+- name: Configure DNS system settings
+  fortinet.fortios.fortios_system_dns:
+    access_token: "{{ access_token }}"
+    system_dns: "{{ fortigate_system_dns }}"
+  when: fortigate_system_dns is defined
+
+# Configure DNS databases
+- name: Configure DNS database - {{ item.system_dns_database.name }}
+  fortinet.fortios.fortios_system_dns_database:
+    access_token: "{{ access_token }}"
+    state: "{{ item.state | default('present') }}"
+    system_dns_database: "{{ item.system_dns_database }}"
+  loop: "{{ fortigate_dns_databases | default([]) }}"
+  loop_control:
+    label: "{{ item.system_dns_database.name }}"
+  when: fortigate_dns_databases | length > 0
+
+# Configure DNS entries
+- name: Configure DNS entries for {{ item.system_dns_database.name }}
+  fortinet.fortios.fortios_system_dns_database:
+    access_token: "{{ access_token }}"
+    state: "present"
+    member_path: "{{ item.member_path }}"
+    member_state: "{{ item.member_state | default('present') }}"
+    system_dns_database: "{{ item.system_dns_database }}"
+  loop: "{{ fortigate_dns_entries | default([]) }}"
+  loop_control:
+    label: "{{ item.system_dns_database.name }}"
+  when: fortigate_dns_entries | length > 0

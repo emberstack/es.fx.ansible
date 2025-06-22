@@ -1,0 +1,19 @@
+---
+# FortiOS 7.4.x specific settings
+fortigate_version_features:
+  supports_sdwan_zones: yes
+  supports_automation_stitches: yes
+  supports_ztna: yes
+  supports_file_filter_profile: yes
+  supports_inline_casb: yes
+  supports_dia_policy: yes
+  supports_geneve: yes
+  supports_log_forward_direct: yes
+  max_firewall_policies: 100000
+  
+# API changes in 7.4
+fortigate_api_changes:
+  system_global_path: "system/global"
+  admin_timeout_param: "admintimeout"
+  supports_api_v2: yes
+  supports_graphql: yes

@@ -1,0 +1,174 @@
+---
+# Certificate management tasks for FortiGate - Optimized version
+
+# Configure ACME interfaces first (if using ACME certificates)
+- name: Configure ACME interfaces
+  include_tasks: acme_interfaces.yaml
+  when: 
+    - fortigate_acme_interfaces is defined or fortigate_acme_interfaces_remove is defined
+    - fortigate_certificates | selectattr('vpn_certificate_local.enroll_protocol', 'defined') | selectattr('vpn_certificate_local.enroll_protocol', 'match', 'acme.*') | list | length > 0
+
+# Check existing certificates before configuring
+- name: Get all existing certificates
+  fortinet.fortios.fortios_monitor_fact:
+    access_token: "{{ access_token }}"
+    selector: "vpn_certificate_local"
+  register: existing_certificates
+  failed_when: false
+
+# Build list of certificates that need to be created/updated
+- name: Determine certificates to configure
+  set_fact:
+    certificates_to_configure: >-
+      {%- set result = [] -%}
+      {%- for cert in fortigate_certificates | default([]) -%}
+        {%- set cert_name = cert.vpn_certificate_local.name -%}
+        {%- set existing = existing_certificates.meta.results | default([]) | selectattr('name', 'eq', cert_name) | list -%}
+        {%- if existing | length == 0 -%}
+          {%- set _ = result.append({'cert': cert, 'action': 'create'}) -%}
+        {%- elif cert.vpn_certificate_local.enroll_protocol | default('') == 'acme2' and existing[0].status | default('') != 'OK' -%}
+          {%- set _ = result.append({'cert': cert, 'action': 'renew'}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ result }}
+
+# Configure only certificates that need changes
+- name: Configure certificates
+  fortinet.fortios.fortios_vpn_certificate_local:
+    state: "{{ item.cert.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    vdom: "{{ item.cert.vdom | default('root') }}"
+    vpn_certificate_local: "{{ item.cert.vpn_certificate_local }}"
+  loop: "{{ certificates_to_configure }}"
+  loop_control:
+    loop_var: item
+    label: "{{ item.cert.vpn_certificate_local.name }} ({{ item.action }})"
+  when: certificates_to_configure | length > 0
+  register: certificate_results
+
+# Check ACME certificate enrollment status (batch operation)
+- name: Check ACME certificate enrollment status
+  when: 
+    - certificate_results is defined
+    - certificate_results.changed
+    - certificates_to_configure | selectattr('cert.vpn_certificate_local.enroll_protocol', 'defined') | selectattr('cert.vpn_certificate_local.enroll_protocol', 'match', 'acme.*') | list | length > 0
+  block:
+    # Get all certificates status at once
+    - name: Get all certificate status
+      fortinet.fortios.fortios_monitor_fact:
+        access_token: "{{ access_token }}"
+        selector: "vpn_certificate_local"
+      register: all_certificates_status
+      failed_when: false
+
+    # Filter for our ACME certificates
+    - name: Check ACME enrollment completion
+      set_fact:
+        acme_enrollments: >-
+          {%- set acme_certs = certificates_to_configure | selectattr('cert.vpn_certificate_local.enroll_protocol', 'defined') | selectattr('cert.vpn_certificate_local.enroll_protocol', 'match', 'acme.*') | list -%}
+          {%- set cert_names = acme_certs | map(attribute='cert.vpn_certificate_local.name') | list -%}
+          {%- set statuses = all_certificates_status.meta.results | default([]) | selectattr('name', 'in', cert_names) | list -%}
+          {{ statuses }}
+
+    # Wait if any ACME certificates are still enrolling
+    - name: Wait for ACME enrollments if needed
+      pause:
+        seconds: 30
+        prompt: "Waiting for ACME certificate enrollments to complete..."
+      when: 
+        - acme_enrollments | selectattr('status', 'ne', 'OK') | list | length > 0
+        - acme_enrollments | length > 0
+
+# Set admin server certificate
+- name: Set admin server certificate
+  when: fortigate_admin_server_cert is defined
+  block:
+    # Check all certificates at once for efficiency
+    - name: Get all available certificates
+      fortinet.fortios.fortios_monitor_fact:
+        access_token: "{{ access_token }}"
+        selector: "system_available-certificates"
+      register: all_available_certs
+      failed_when: false
+      
+    # Find our certificate
+    - name: Check if admin certificate is available
+      set_fact:
+        admin_cert_available: >-
+          {%- set found_certs = all_available_certs.meta.results | default([]) | selectattr('name', 'eq', fortigate_admin_server_cert) | selectattr('status', 'eq', 'valid') | list -%}
+          {{ found_certs | length > 0 }}
+        admin_cert_info: >-
+          {%- set found_certs = all_available_certs.meta.results | default([]) | selectattr('name', 'eq', fortigate_admin_server_cert) | list -%}
+          {%- if found_certs | length > 0 -%}
+            {{ found_certs[0] }}
+          {%- else -%}
+            {}
+          {%- endif -%}
+    
+    # Check if certificate is already set as admin cert
+    - name: Get current admin certificate
+      fortinet.fortios.fortios_configuration_fact:
+        access_token: "{{ access_token }}"
+        selector: "system_global"
+      register: system_global_config
+      failed_when: false
+    
+    - name: Debug system global config response
+      debug:
+        var: system_global_config
+        verbosity: 2
+    
+    - name: Check if admin certificate needs to be updated
+      set_fact:
+        current_admin_cert: "{{ system_global_config.meta.results['admin-server-cert'] | default(system_global_config.meta.results.admin_server_cert | default('')) }}"
+        admin_cert_needs_update: >-
+          {{ admin_cert_available | bool and 
+             system_global_config.meta.results['admin-server-cert'] | default(system_global_config.meta.results.admin_server_cert | default('')) != fortigate_admin_server_cert }}
+    
+    - name: Debug admin certificate comparison
+      debug:
+        msg: |
+          Current admin cert: '{{ system_global_config.meta.results["admin-server-cert"] | default("") }}'
+          Desired admin cert: '{{ fortigate_admin_server_cert }}'
+          Needs update: {{ admin_cert_needs_update }}
+      when: admin_cert_available | bool
+      
+    - name: Apply admin server certificate
+      fortinet.fortios.fortios_system_global:
+        access_token: "{{ access_token }}"
+        system_global:
+          admin_server_cert: "{{ fortigate_admin_server_cert }}"
+      when: admin_cert_needs_update | bool
+      register: admin_cert_result
+      
+    - name: Report certificate status
+      debug:
+        msg: |
+          Certificate '{{ fortigate_admin_server_cert }}' status:
+          {% if not all_available_certs.failed | default(false) and admin_cert_info %}
+          - Status: {{ admin_cert_info.status | default('unknown') }}
+          - Expiry: {{ admin_cert_info.valid_to | default('unknown') }}
+          - Already set as admin cert: {{ not admin_cert_needs_update }}
+          - Applied to admin GUI: {{ admin_cert_result.changed | default(false) }}
+          {% else %}
+          - NOT FOUND: Certificate does not exist or is still enrolling
+          {% endif %}
+          
+          {% if not admin_cert_available | bool %}
+          NOTE: The certificate may still be enrolling. You can run this playbook again later to apply the certificate once enrollment is complete.
+          {% endif %}
+      
+    # Verify the change was applied
+    - name: Verify admin certificate was applied
+      fortinet.fortios.fortios_configuration_fact:
+        access_token: "{{ access_token }}"
+        selector: "system_global"
+      register: verify_admin_cert
+      when: 
+        - admin_cert_needs_update | bool
+        - admin_cert_result.changed | default(false)
+    
+    - name: Show verification result
+      debug:
+        msg: "Admin certificate after update: {{ verify_admin_cert.meta.results['admin-server-cert'] | default('unknown') }}"
+      when: verify_admin_cert is defined and not verify_admin_cert.skipped | default(false)

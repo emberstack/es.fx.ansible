@@ -1,0 +1,52 @@
+---
+# Common FortiGate version and capability detection
+
+- name: Get FortiGate system status
+  fortinet.fortios.fortios_monitor_fact:
+    access_token: "{{ access_token }}"
+    selector: "system_status"
+  register: fortigate_status
+  when: fortigate_version is not defined
+
+# Set version facts
+- name: Set FortiGate version facts
+  set_fact:
+    fortigate_version: "{{ fortigate_status.meta.version }}"
+    fortigate_model: "{{ fortigate_status.meta.serial | regex_search('^[A-Z]+') | default('Generic') }}"
+    fortigate_major_version: "{{ fortigate_status.meta.version.split('.')[0] }}.{{ fortigate_status.meta.version.split('.')[1] }}"
+  when: 
+    - fortigate_status is defined
+    - fortigate_version is not defined
+
+# Load model-specific capabilities
+- name: Load model-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "models/{{ fortigate_model }}.yaml"
+        - "models/default.yaml"
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
+
+# Load version-specific variables
+- name: Load version-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - "versions/{{ fortigate_major_version }}.yaml"
+        - "versions/{{ fortigate_version }}.yaml"
+        - "versions/default.yaml"
+      paths:
+        - "{{ role_path }}/vars"
+      skip: true
+
+# Set default capabilities if not loaded
+- name: Set default model capabilities
+  set_fact:
+    fortigate_model_capabilities:
+      supports_hardware_switch: true
+      supports_wireless: true
+      supports_fortiextender: true
+      max_vdoms: 10
+  when: fortigate_model_capabilities is not defined

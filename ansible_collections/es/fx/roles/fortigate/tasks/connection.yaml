@@ -1,0 +1,30 @@
+---
+# Common FortiGate connection verification tasks
+
+- name: Verify FortiGate connection
+  include_tasks: common/monitor_facts.yaml
+  vars:
+    monitor_selector: "system_status"
+    monitor_description: "FortiGate system status"
+    monitor_retries: 3
+    monitor_delay: 5
+
+- name: Capture connection results
+  set_fact:
+    fortigate_facts: "{{ _monitor_result }}"
+  
+- name: Set FortiGate facts
+  set_fact:
+    fortigate_version: "{{ fortigate_facts.meta.version }}"
+    fortigate_model: "{{ fortigate_facts.meta.serial | regex_search('^[A-Z]+') | default('Generic') }}"
+    fortigate_hostname: "{{ fortigate_facts.meta.results.hostname }}"
+    fortigate_serial: "{{ fortigate_facts.meta.serial }}"
+    fortigate_major_version: "{{ fortigate_facts.meta.version.split('.')[0] }}.{{ fortigate_facts.meta.version.split('.')[1] }}"
+  when: 
+    - fortigate_facts is succeeded
+    - fortigate_facts.meta is defined
+
+- name: Display connection info
+  debug:
+    msg: "Connected to {{ fortigate_hostname }} ({{ ansible_host }}:{{ ansible_httpapi_port }}) - Model: {{ fortigate_model }} - Version: {{ fortigate_version }}"
+    verbosity: 1

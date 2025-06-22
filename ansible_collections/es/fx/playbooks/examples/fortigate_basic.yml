@@ -1,0 +1,84 @@
+---
+# Basic FortiGate Configuration Example
+# This playbook demonstrates basic FortiGate configuration using the es.fx collection
+
+- name: Configure FortiGate - Basic Setup
+  hosts: fortigates
+  gather_facts: no
+  connection: httpapi
+  collections:
+    - es.fx
+    - fortinet.fortios
+  
+  vars:
+    # Connection settings
+    ansible_network_os: fortinet.fortios.fortios
+    ansible_httpapi_use_ssl: yes
+    ansible_httpapi_validate_certs: no
+    ansible_httpapi_port: 443
+    
+    # Basic system settings
+    fortigate_system_settings:
+      global:
+        hostname: "fw-example-01"
+        timezone: "04"  # America/New_York
+        ntp:
+          sync: true
+          sync_interval: 60
+        admin:
+          https_redirect: true
+    
+    # DNS configuration
+    fortigate_system_dns:
+      primary: "8.8.8.8"
+      secondary: "8.8.4.4"
+      domain: "example.local"
+    
+    # Basic interfaces
+    fortigate_interfaces:
+      - system_interface:
+          name: "port1"
+          alias: "WAN"
+          mode: "dhcp"
+          allowaccess: "ping https ssh"
+          
+      - system_interface:
+          name: "port2"
+          alias: "LAN"
+          mode: "static"
+          ip: "192.168.1.1/24"
+          allowaccess: "ping https ssh http"
+        dhcp:
+          start_ip: "192.168.1.100"
+          end_ip: "192.168.1.200"
+          netmask: "255.255.255.0"
+          dns_server1: "192.168.1.1"
+    
+    # Basic firewall addresses
+    fortigate_firewall_addresses:
+      - firewall_address:
+          name: "lan_network"
+          subnet: "192.168.1.0/24"
+          type: "ipmask"
+          
+    # Basic firewall policy
+    fortigate_firewall_policies:
+      - firewall_policy:
+          id: 1
+          name: "lan_to_wan"
+          srcintf:
+            - name: "port2"
+          dstintf:
+            - name: "port1"
+          srcaddr:
+            - name: "lan_network"
+          dstaddr:
+            - name: "all"
+          service:
+            - name: "ALL"
+          action: "accept"
+          nat: "enable"
+          schedule: "always"
+  
+  roles:
+    - fortigate

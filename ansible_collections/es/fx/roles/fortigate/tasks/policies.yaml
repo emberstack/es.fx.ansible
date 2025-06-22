@@ -1,0 +1,22 @@
+---
+# Firewall policy configuration tasks
+
+# Get all existing policies first for efficient management
+- name: Get all firewall policies
+  fortinet.fortios.fortios_configuration_fact:
+    access_token: "{{ access_token }}"
+    vdom: "{{ vdom | default('root') }}"
+    selectors:
+      - selector: firewall_policy
+  when: fortigate_firewall_policies is defined
+
+# Configure firewall policies
+- name: Configure firewall policy - {{ item.firewall_policy.name }}
+  fortinet.fortios.fortios_firewall_policy:
+    state: "{{ item.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    firewall_policy: "{{ item.firewall_policy }}"
+  loop: "{{ fortigate_firewall_policies | default([]) }}"
+  loop_control:
+    label: "{{ item.firewall_policy.name }} (ID: {{ item.firewall_policy.policyid }})"
+  when: fortigate_firewall_policies is defined

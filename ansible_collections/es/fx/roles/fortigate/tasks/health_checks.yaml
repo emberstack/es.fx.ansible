@@ -1,0 +1,13 @@
+---
+# Firewall health check (load balancing monitor) configuration tasks
+
+- name: Configure firewall health check - {{ health_check.firewall_ldb_monitor.name }}
+  fortinet.fortios.fortios_firewall_ldb_monitor:
+    access_token: "{{ access_token }}"
+    state: "{{ health_check.state | default(fortigate_default_state) }}"
+    vdom: "{{ health_check.vdom | default(vdom | default(fortigate_vdom)) }}"
+    firewall_ldb_monitor: "{{ health_check.firewall_ldb_monitor }}"
+  loop: "{{ fortigate_firewall_health_checks | default([]) }}"
+  loop_control:
+    loop_var: health_check
+    label: "{{ health_check.firewall_ldb_monitor.name | default('health_check') }}"

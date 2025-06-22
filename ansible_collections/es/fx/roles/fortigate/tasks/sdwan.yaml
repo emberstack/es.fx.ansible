@@ -1,0 +1,29 @@
+---
+# SD-WAN configuration tasks
+
+# Enable SD-WAN and configure members
+- name: Enable SD-WAN and configure members
+  fortinet.fortios.fortios_system_sdwan:
+    access_token: "{{ access_token }}"
+    system_sdwan:
+      status: enable
+      members: "{{ fortigate_sdwan.members }}"
+  when: fortigate_sdwan.members is defined
+
+
+# Configure SD-WAN services
+- name: Configure SD-WAN service - {{ service.name }}
+  fortinet.fortios.fortios_system_sdwan:
+    access_token: "{{ access_token }}"
+    member_path: "service:id"
+    member_state: present
+    system_sdwan:
+      service:
+        - "{{ service }}"
+  loop: "{{ fortigate_sdwan.system_sdwan.service | default([]) }}"
+  loop_control:
+    loop_var: service
+    label: "{{ service.name }}"
+  when: 
+    - fortigate_sdwan.system_sdwan is defined
+    - fortigate_sdwan.system_sdwan.service is defined

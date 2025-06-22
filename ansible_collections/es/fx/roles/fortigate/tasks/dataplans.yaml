@@ -1,0 +1,14 @@
+---
+# Extension controller dataplan configuration tasks
+
+- name: Configure extension controller dataplan - {{ dataplan.extension_controller_dataplan.name }}
+  fortinet.fortios.fortios_extension_controller_dataplan:
+    vdom: "{{ dataplan.vdom | default('root') }}"
+    state: "{{ dataplan.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    enable_log: "{{ dataplan.enable_log | default(true) }}"
+    extension_controller_dataplan: "{{ dataplan.extension_controller_dataplan }}"
+  loop: "{{ fortigate_controller_extension_dataplans }}"
+  loop_control:
+    loop_var: dataplan
+    label: "{{ dataplan.extension_controller_dataplan.name | default('dataplan') }}"

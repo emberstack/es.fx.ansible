@@ -1,0 +1,13 @@
+---
+# FortiOS 7.0.x specific settings
+fortigate_version_features:
+  supports_sdwan_zones: yes
+  supports_automation_stitches: yes
+  supports_ztna: yes
+  supports_file_filter_profile: yes
+  max_firewall_policies: 100000
+  
+# API changes in 7.0
+fortigate_api_changes:
+  system_global_path: "system/global"
+  admin_timeout_param: "admintimeout"

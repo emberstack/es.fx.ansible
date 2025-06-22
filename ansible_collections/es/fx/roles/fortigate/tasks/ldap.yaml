@@ -1,0 +1,12 @@
+---
+# Configure LDAP servers
+
+- name: Configure LDAP server - {{ item.user_ldap.name }}
+  fortinet.fortios.fortios_user_ldap:
+    access_token: "{{ access_token }}"
+    state: "{{ item.state | default('present') }}"
+    user_ldap: "{{ item.user_ldap }}"
+  loop: "{{ fortigate_ldap_servers | default([]) }}"
+  loop_control:
+    label: "{{ item.user_ldap.name }}"
+  when: fortigate_ldap_servers | length > 0

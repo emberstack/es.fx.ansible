@@ -1,0 +1,53 @@
+---
+# Handle admin port changes with connection management
+- name: Check current admin HTTPS port
+  fortinet.fortios.fortios_configuration_fact:
+    access_token: "{{ access_token }}"
+    selector: "system_global"
+  register: current_config
+
+- name: Set facts for port management
+  set_fact:
+    current_https_port: "{{ current_config.meta.results.admin_sport | default(443) | string }}"
+    desired_https_port: "{{ settings.global.admin.https_port | string }}"
+    port_change_needed: "{{ (current_config.meta.results.admin_sport | default(443) | string) != (settings.global.admin.https_port | string) }}"
+
+- name: Display port change info
+  debug:
+    msg: "Current HTTPS port: {{ current_https_port }}, Desired: {{ desired_https_port }}, Change needed: {{ port_change_needed }}"
+
+- name: Update admin ports configuration
+  fortinet.fortios.fortios_system_global:
+    access_token: "{{ access_token }}"
+    system_global:
+      admin_port: "{{ settings.global.admin.http_port }}"
+      admin_https_redirect: "{{ 'enable' if (settings.global.admin.https_redirect) else 'disable' }}"
+      admin_sport: "{{ settings.global.admin.https_port }}"
+      admin_ssh_port: "{{ settings.global.admin.ssh_port }}"
+      admin_telnet_port: "{{ settings.global.admin.telnet_port }}"
+      admintimeout: "{{ settings.global.admin.idle_timeout }}"
+  when: port_change_needed | bool
+
+- name: Update connection port for subsequent tasks
+  set_fact:
+    ansible_httpapi_port: "{{ desired_https_port }}"
+  when: port_change_needed | bool
+
+- name: Wait for FortiGate to be accessible on new port
+  wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ desired_https_port }}"
+    delay: 5
+    timeout: 30
+  delegate_to: localhost
+  when: port_change_needed | bool
+
+- name: Verify connection on new port
+  fortinet.fortios.fortios_monitor_fact:
+    access_token: "{{ access_token }}"
+    selector: "system_status"
+  register: verify_result
+  until: not verify_result.failed
+  retries: 3
+  delay: 5
+  when: port_change_needed | bool

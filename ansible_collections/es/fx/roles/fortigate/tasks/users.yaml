@@ -1,0 +1,24 @@
+---
+# Configure local users and user groups
+
+# Configure local users
+- name: Configure local user - {{ item.user_local.name }}
+  fortinet.fortios.fortios_user_local:
+    access_token: "{{ access_token }}"
+    state: "{{ item.state | default('present') }}"
+    user_local: "{{ item.user_local }}"
+  loop: "{{ fortigate_local_users | default([]) }}"
+  loop_control:
+    label: "{{ item.user_local.name }}"
+  when: fortigate_local_users | length > 0
+
+# Configure user groups
+- name: Configure user group - {{ item.user_group.name }}
+  fortinet.fortios.fortios_user_group:
+    access_token: "{{ access_token }}"
+    state: "{{ item.state | default('present') }}"
+    user_group: "{{ item.user_group }}"
+  loop: "{{ fortigate_user_groups | default([]) }}"
+  loop_control:
+    label: "{{ item.user_group.name }}"
+  when: fortigate_user_groups | length > 0

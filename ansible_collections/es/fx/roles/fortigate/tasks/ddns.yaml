@@ -1,0 +1,12 @@
+---
+# Configure Dynamic DNS (DDNS)
+
+- name: Configure DDNS - {{ item.system_ddns.ddns_domain | default(item.system_ddns.ddnsid) }}
+  fortinet.fortios.fortios_system_ddns:
+    access_token: "{{ access_token }}"
+    state: "{{ item.state | default('present') }}"
+    system_ddns: "{{ item.system_ddns }}"
+  loop: "{{ fortigate_ddns_servers | default([]) }}"
+  loop_control:
+    label: "{{ item.system_ddns.ddns_domain | default('DDNS ID: ' + item.system_ddns.ddnsid | string) }}"
+  when: fortigate_ddns_servers | length > 0

@@ -1,0 +1,12 @@
+---
+# Network zone configuration tasks
+
+- name: Configure network zone - {{ zone.system_zone.name }}
+  fortinet.fortios.fortios_system_zone:
+    access_token: "{{ access_token }}"
+    state: "{{ zone.state | default('present') }}"
+    system_zone: "{{ zone.system_zone }}"
+  loop: "{{ fortigate_zones | default([]) }}"
+  loop_control:
+    loop_var: zone
+    label: "{{ zone.system_zone.name | default('zone') }}"

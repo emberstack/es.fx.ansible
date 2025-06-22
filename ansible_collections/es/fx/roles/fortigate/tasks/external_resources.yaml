@@ -1,0 +1,12 @@
+---
+# Configure external resources (threat feeds, block lists, etc.)
+
+- name: Configure external resource - {{ item.system_external_resource.name }}
+  fortinet.fortios.fortios_system_external_resource:
+    access_token: "{{ access_token }}"
+    state: "{{ item.state | default('present') }}"
+    system_external_resource: "{{ item.system_external_resource }}"
+  loop: "{{ fortigate_external_resources | default([]) }}"
+  loop_control:
+    label: "{{ item.system_external_resource.name }}"
+  when: fortigate_external_resources | length > 0

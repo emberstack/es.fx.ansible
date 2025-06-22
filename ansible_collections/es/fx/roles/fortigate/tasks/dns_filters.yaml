@@ -1,0 +1,24 @@
+---
+# Configure DNS filter domain filters and profiles
+
+# Configure DNS filter domain filters
+- name: Configure DNS filter domain - {{ item.dnsfilter_domain_filter.name }}
+  fortinet.fortios.fortios_dnsfilter_domain_filter:
+    access_token: "{{ access_token }}"
+    state: "{{ item.state | default('present') }}"
+    dnsfilter_domain_filter: "{{ item.dnsfilter_domain_filter }}"
+  loop: "{{ fortigate_dnsfilter_domain_filters | default([]) }}"
+  loop_control:
+    label: "{{ item.dnsfilter_domain_filter.name }}"
+  when: fortigate_dnsfilter_domain_filters | length > 0
+
+# Configure DNS filter profiles
+- name: Configure DNS filter profile - {{ item.dnsfilter_profile.name }}
+  fortinet.fortios.fortios_dnsfilter_profile:
+    access_token: "{{ access_token }}"
+    state: "{{ item.state | default('present') }}"
+    dnsfilter_profile: "{{ item.dnsfilter_profile }}"
+  loop: "{{ fortigate_dnsfilter_profiles | default([]) }}"
+  loop_control:
+    label: "{{ item.dnsfilter_profile.name }}"
+  when: fortigate_dnsfilter_profiles | length > 0

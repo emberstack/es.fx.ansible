@@ -1,0 +1,13 @@
+---
+# IP Pool configuration tasks
+
+# Configure IP pools
+- name: Configure IP pool - {{ item.firewall_ippool.name }}
+  fortinet.fortios.fortios_firewall_ippool:
+    state: "{{ item.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    firewall_ippool: "{{ item.firewall_ippool }}"
+  loop: "{{ fortigate_firewall_ippools | default([]) }}"
+  loop_control:
+    label: "{{ item.firewall_ippool.name }}"
+  when: fortigate_firewall_ippools is defined

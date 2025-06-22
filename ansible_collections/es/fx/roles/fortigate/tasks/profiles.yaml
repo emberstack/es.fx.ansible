@@ -1,0 +1,13 @@
+---
+# Extension controller profile configuration tasks
+
+- name: Configure extension controller profile - {{ profile.extension_controller_extender_profile.name }}
+  fortinet.fortios.fortios_extension_controller_extender_profile:
+    vdom: "{{ profile.vdom | default('root') }}"
+    state: "{{ profile.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    extension_controller_extender_profile: "{{ profile.extension_controller_extender_profile }}"
+  loop: "{{ fortigate_controller_extension_profiles }}"
+  loop_control:
+    loop_var: profile
+    label: "{{ profile.extension_controller_extender_profile.name | default('profile') }}"

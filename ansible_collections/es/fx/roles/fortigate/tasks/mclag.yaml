@@ -1,0 +1,29 @@
+---
+# FortiLink MCLAG configuration tasks
+
+- name: Get managed switch status for MCLAG
+  fortinet.fortios.fortios_monitor_fact:
+    access_token: "{{ access_token }}"
+    selector: "switch-controller_managed-switch_status"
+    formatters:
+      - serial
+      - status
+    filters:
+      - "status==Connected"
+  register: managed_switch_status
+  when: interface.mclag.enabled | default(false)
+  failed_when: false
+
+- name: Configure FortiLink split interface for MCLAG
+  fortinet.fortios.fortios_system_interface:
+    access_token: "{{ access_token }}"
+    state: "present"
+    system_interface:
+      name: "{{ interface.system_interface.name }}"
+      fortilink_split_interface: "{{ interface.mclag.fortilink_split_interface }}"
+  vars:
+    online_peers: "{{ managed_switch_status.meta.results | default([]) | selectattr('serial', 'in', interface.mclag.peers | map(attribute='serial') | list) | list }}"
+    mclag_ready: "{{ online_peers | length == interface.mclag.peers | length }}"
+  when: 
+    - interface.mclag.enabled | default(false)
+    - mclag_ready

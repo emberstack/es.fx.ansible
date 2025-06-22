@@ -1,0 +1,19 @@
+---
+# Static route configuration tasks
+
+- name: Configure static route - {{ static_route.router_static.seq_num | default(static_route.router_static.dst | default('route')) }}
+  fortinet.fortios.fortios_router_static:
+    state: "{{ static_route.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    router_static: "{{ static_route.router_static }}"
+  loop: "{{ fortigate_static_routes | default([]) }}"
+  loop_control:
+    loop_var: static_route
+    label: >-
+      {%- if static_route.router_static.seq_num is defined -%}
+        seq_num: {{ static_route.router_static.seq_num }}
+      {%- elif static_route.router_static.dst is defined -%}
+        dst: {{ static_route.router_static.dst }}
+      {%- else -%}
+        route
+      {%- endif -%}

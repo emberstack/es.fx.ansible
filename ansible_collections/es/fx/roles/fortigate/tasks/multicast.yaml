@@ -1,0 +1,14 @@
+---
+# Multicast policy configuration tasks
+
+# Configure multicast policies
+- name: Configure multicast policy - {{ item.firewall_multicast_policy.name }}
+  fortinet.fortios.fortios_firewall_multicast_policy:
+    state: "{{ item.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    firewall_multicast_policy: "{{ item.firewall_multicast_policy }}"
+  loop: "{{ fortigate_firewall_multicast_policies | default([]) }}"
+  loop_control:
+    label: "{{ item.firewall_multicast_policy.name }} (ID: {{ item.firewall_multicast_policy.id }})"
+  when: fortigate_firewall_multicast_policies is defined
+  ignore_errors: true

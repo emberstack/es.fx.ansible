@@ -1,0 +1,8 @@
+---
+# Configure wireless SSIDs (VAPs)
+
+- name: Configure SSID {{ ssid.wireless_controller_vap.name }}
+  fortinet.fortios.fortios_wireless_controller_vap:
+    access_token: "{{ access_token }}"
+    state: "{{ ssid.state | default('present') }}"
+    wireless_controller_vap: "{{ ssid.wireless_controller_vap }}"

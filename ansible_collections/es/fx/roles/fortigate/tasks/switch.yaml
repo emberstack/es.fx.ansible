@@ -1,0 +1,33 @@
+---
+# Switch controller configuration tasks
+
+- name: Check switch controller status - {{ switch.switch_id | default(switch.sn) }}
+  fortinet.fortios.fortios_monitor_fact:
+    access_token: "{{ access_token }}"
+    selector: "switch-controller_managed-switch_status"
+    formatters:
+      - serial
+      - state
+      - status
+      - switch-id
+    filters:
+      - "serial=={{ switch.sn }}"
+  register: managed_switch_status
+  failed_when: false
+
+- name: Add managed switch - {{ switch.switch_id | default(switch.sn) }}
+  fortinet.fortios.fortios_switch_controller_managed_switch:
+    state: "present"
+    access_token: "{{ access_token }}"
+    switch_controller_managed_switch:
+      switch_id: "{{ switch.switch_id }}"
+      sn: "{{ switch.sn }}"
+      fsw_wan1_peer: "fortilink"
+      fsw_wan1_admin: "enable"
+  when: managed_switch_status.meta.results | length == 0
+
+- name: Configure managed switch - {{ switch.switch_id | default(switch.sn) }}
+  fortinet.fortios.fortios_switch_controller_managed_switch:
+    state: "present"
+    access_token: "{{ access_token }}"
+    switch_controller_managed_switch: "{{ switch }}"

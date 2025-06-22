@@ -1,0 +1,23 @@
+---
+# IPSec VPN tunnel configuration tasks
+
+- name: Configure IPSec phase 1 - {{ tunnel.vpn_ipsec_phase1_interface.name }}
+  fortinet.fortios.fortios_vpn_ipsec_phase1_interface:
+    state: "{{ tunnel.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    vpn_ipsec_phase1_interface: "{{ tunnel.vpn_ipsec_phase1_interface }}"
+  when: tunnel.vpn_ipsec_phase1_interface is defined
+
+- name: Configure IPSec phase 2 - {{ tunnel.vpn_ipsec_phase2_interface.name | default(tunnel.vpn_ipsec_phase1_interface.name) }}
+  fortinet.fortios.fortios_vpn_ipsec_phase2_interface:
+    state: "{{ tunnel.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    vpn_ipsec_phase2_interface: "{{ tunnel.vpn_ipsec_phase2_interface }}"
+  when: tunnel.vpn_ipsec_phase2_interface is defined
+
+- name: Configure IPSec aggregate - {{ tunnel.system_ipsec_aggregate.name }}
+  fortinet.fortios.fortios_system_ipsec_aggregate:
+    state: "{{ tunnel.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    system_ipsec_aggregate: "{{ tunnel.system_ipsec_aggregate }}"
+  when: tunnel.system_ipsec_aggregate is defined

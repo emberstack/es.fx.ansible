@@ -1,0 +1,8 @@
+---
+# Default settings for all FortiGate models
+fortigate_model_capabilities:
+  max_vdoms: 10
+  max_interfaces: 100
+  supports_hardware_switch: yes
+  supports_wifi_controller: yes
+  supports_fortiextender: yes

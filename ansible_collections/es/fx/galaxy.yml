@@ -1,0 +1,33 @@
+---
+namespace: es
+name: fx
+version: 1.0.0
+readme: README.md
+authors:
+  - EmberStack <support@emberstack.com>
+description: EmberStack Frameworks Collection for network infrastructure automation
+license:
+  - MIT
+license_file: LICENSE
+tags:
+  - emberstack
+  - framework
+  - infrastructure
+  - networking
+  - fortinet
+  - fortigate
+  - security
+  - firewall
+  - automation
+dependencies: {}
+repository: https://github.com/emberstack/ansible-collection-fx
+documentation: https://github.com/emberstack/ansible-collection-fx/wiki
+homepage: https://emberstack.com/
+issues: https://github.com/emberstack/ansible-collection-fx/issues
+build_ignore:
+  - .DS_Store
+  - .git
+  - .gitignore
+  - .github
+  - tests/output
+  - '*.tar.gz'

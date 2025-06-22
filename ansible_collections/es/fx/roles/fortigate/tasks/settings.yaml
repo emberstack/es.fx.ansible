@@ -1,0 +1,114 @@
+# Host name
+- name: Configure system hostname
+  fortinet.fortios.fortios_system_global:
+    access_token: "{{ access_token }}"
+    system_global:
+      hostname: "{{ settings.global.hostname }}"
+  when: settings.global.hostname is defined
+
+# System Time
+- name: Configure system timezone
+  fortinet.fortios.fortios_system_global:
+    access_token: "{{ access_token }}"
+    system_global:
+      timezone: "{{ settings.global.timezone }}"
+
+- name: Configure NTP synchronization
+  fortinet.fortios.fortios_system_ntp:
+    access_token: "{{ access_token }}"
+    system_ntp:
+      ntpsync: "{{ 'enable' if (settings.global.ntp.sync) else 'disable' }}"
+      syncinterval: "{{ settings.global.ntp.sync_interval }}"
+      type: "fortiguard"
+
+# Administration Settings
+- name: Verify admin server certificate exists
+  fortinet.fortios.fortios_monitor_fact:
+    access_token: "{{ access_token }}"
+    selector: "system_available-certificates"
+    filters:
+      - "name=={{settings.global.admin.admin_server_cert}}"
+      - "exists==true"
+      - "status==valid"
+    formatters:
+      - name
+      - exists
+      - status
+  register: _server_cert_lookup
+
+- name: Apply admin server certificate
+  fortinet.fortios.fortios_system_global:
+    access_token: "{{ access_token }}"
+    system_global:
+      admin_server_cert: "{{settings.global.admin.admin_server_cert}}"
+  when: _server_cert_lookup.meta.results | length > 0
+
+- name: Handle admin port configuration
+  include_tasks: admin_port.yaml
+  when: settings.global.admin is defined
+
+# WiFi Settings
+- name: Configure wireless controller country
+  fortinet.fortios.fortios_wireless_controller_setting:
+    access_token: "{{ access_token }}"
+    wireless_controller_setting:
+      country: "{{ settings.wireless_controller.global.country }}"
+
+# Password Policy
+- name: Configure password policy
+  no_log: false
+  fortinet.fortios.fortios_system_password_policy:
+    access_token: "{{ access_token }}"
+    system_password_policy:
+      status: "{{ 'enable' if (settings.password_policy.enabled) else 'disable' }}"
+      apply_to: "{{ settings.password_policy.apply_to }}"
+
+      minimum_length: "{{ settings.password_policy.min_length }}"
+      min_change_characters: "{{ settings.password_policy.min_change_characters }}"
+
+      min_upper_case_letter: "{{ settings.password_policy.character_requirements.min_upper_case }}"
+      min_lower_case_letter: "{{ settings.password_policy.character_requirements.min_lower_case }}"
+      min_non_alphanumeric: "{{ settings.password_policy.character_requirements.min_non_alpha }}"
+      min_number: "{{ settings.password_policy.character_requirements.min_number }}"
+
+      expire_status: "{{ 'enable' if (settings.password_policy.expiration.enabled) else 'disable' }}"
+      expire_day: "{{ settings.password_policy.expiration.days }}"
+      reuse_password: "{{ 'enable' if (settings.password_policy.reuse) else 'disable' }}"
+
+# View Settings
+- name: Configure GUI theme and settings
+  fortinet.fortios.fortios_system_global:
+    access_token: "{{ access_token }}"
+    system_global:
+      gui_theme: "{{ settings.global.gui.theme }}"
+      gui_date_time_source: "{{ settings.global.gui.timesource }}"
+
+- name: Configure auto-install settings
+  fortinet.fortios.fortios_system_auto_install:
+    access_token: "{{ access_token }}"
+    system_auto_install:
+      auto_install_config: "{{ 'enable' if (settings.auto_install.config) else 'disable' }}"
+      auto_install_image: "{{ 'enable' if (settings.auto_install.image) else 'disable' }}"
+
+- name: Configure automatic filesystem check
+  fortinet.fortios.fortios_system_global:
+    access_token: "{{ access_token }}"
+    system_global:
+      autorun_log_fsck: "{{ 'enable' if (settings.global.auto_filesystem_check) else 'disable' }}"
+
+# Feature visibility
+- name: Configure system feature visibility
+  fortinet.fortios.fortios_system_settings:
+    access_token: "{{ access_token }}"
+    system_settings: "{{ settings.settings.feature_visibility}}"
+
+- name: Configure global feature visibility
+  fortinet.fortios.fortios_system_global:
+    access_token: "{{ access_token }}"
+    system_global: "{{ settings.global.feature_visibility}}"
+
+# Log Disk Settings
+- name: Configure log disk settings
+  fortinet.fortios.fortios_log_disk_setting:
+    access_token: "{{ access_token }}"
+    log_disk_setting: "{{ settings.log_disk_setting}}"

@@ -1,0 +1,8 @@
+---
+# Configure FortiAP profiles
+
+- name: Configure FortiAP profile {{ profile.wireless_controller_wtp_profile.name }}
+  fortinet.fortios.fortios_wireless_controller_wtp_profile:
+    access_token: "{{ access_token }}"
+    state: "{{ profile.state | default('present') }}"
+    wireless_controller_wtp_profile: "{{ profile.wireless_controller_wtp_profile }}"

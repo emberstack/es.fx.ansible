@@ -1,0 +1,13 @@
+---
+# Extension controller extender configuration tasks
+
+- name: Configure extension controller extender - {{ extender.extension_controller_extender.name }}
+  fortinet.fortios.fortios_extension_controller_extender:
+    vdom: "{{ extender.vdom | default('root') }}"
+    state: "{{ extender.state | default('present') }}"
+    access_token: "{{ access_token }}"
+    extension_controller_extender: "{{ extender.extension_controller_extender }}"
+  loop: "{{ fortigate_controller_extension_extenders }}"
+  loop_control:
+    loop_var: extender
+    label: "{{ extender.extension_controller_extender.name | default('extender') }}"

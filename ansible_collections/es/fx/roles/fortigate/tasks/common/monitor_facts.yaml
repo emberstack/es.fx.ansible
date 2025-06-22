@@ -1,0 +1,15 @@
+---
+# Reusable task for gathering FortiGate monitor facts
+# Result will be in _monitor_result variable
+
+- name: "Monitor {{ monitor_description }}"
+  fortinet.fortios.fortios_monitor_fact:
+    access_token: "{{ access_token }}"
+    selector: "{{ monitor_selector }}"
+    vdom: "{{ vdom | default(fortigate_vdom) }}"
+    formatters: "{{ monitor_formatters | default(omit) }}"
+    filters: "{{ monitor_filters | default(omit) }}"
+  register: _monitor_result
+  retries: "{{ monitor_retries | default(fortigate_connection_retries) }}"
+  delay: "{{ monitor_delay | default(fortigate_connection_delay) }}"
+  until: _monitor_result is not failed

@@ -1,0 +1,27 @@
+---
+# Firewall address configuration tasks
+# Using standardized patterns for consistency
+
+# Configure firewall addresses
+- name: Configure firewall address - {{ item.firewall_address.name }}
+  fortinet.fortios.fortios_firewall_address:
+    state: "{{ item.state | default(fortigate_default_state) }}"
+    access_token: "{{ access_token }}"
+    vdom: "{{ item.vdom | default(vdom | default(fortigate_vdom)) }}"
+    firewall_address: "{{ item.firewall_address }}"
+  loop: "{{ fortigate_firewall_addresses | default([]) }}"
+  loop_control:
+    label: "{{ item.firewall_address.name }}"
+  when: fortigate_firewall_addresses is defined and fortigate_firewall_addresses | length > 0
+
+# Configure firewall address groups
+- name: Configure firewall address group - {{ item.firewall_addrgrp.name }}
+  fortinet.fortios.fortios_firewall_addrgrp:
+    state: "{{ item.state | default(fortigate_default_state) }}"
+    access_token: "{{ access_token }}"
+    vdom: "{{ item.vdom | default(vdom | default(fortigate_vdom)) }}"
+    firewall_addrgrp: "{{ item.firewall_addrgrp }}"
+  loop: "{{ fortigate_firewall_address_groups | default([]) }}"
+  loop_control:
+    label: "{{ item.firewall_addrgrp.name }}"
+  when: fortigate_firewall_address_groups is defined and fortigate_firewall_address_groups | length > 0
